@@ -111,12 +111,10 @@ class _QrCodeScreenState extends State<QrCodeScreen>
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Center(
-                    child: Center(
-                      child: QrImageView(
-                        data: slug!,
-                        version: QrVersions.auto,
-                        size: 200.0,
-                      ),
+                    child: QrImageView(
+                      data: slug!,
+                      version: QrVersions.auto,
+                      size: 200.0,
                     ),
                   )),
               const SizedBox(height: 20),
