@@ -1,6 +1,8 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 import 'package:web_socket_channel/io.dart';
 import 'dart:convert';
 
@@ -92,60 +94,181 @@ class _QrCodeScreenState extends State<QrCodeScreen>
           ],
         )),
       );
-    } else if (!isLoading && slug != null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('Scan QR code to login',
-                  style: TextStyle(
-                    fontSize: 20,
-                  )),
-              const SizedBox(height: 20),
-              Container(
-                  width: 210,
-                  height: 210,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Center(
-                    child: QrImageView(
-                      data: slug!,
-                      version: QrVersions.auto,
-                      size: 200.0,
-                    ),
-                  )),
-              const SizedBox(height: 20),
-              Container(
-                height: 3,
-                color: const Color.fromARGB(255, 10, 163, 218),
-                width: 210 * _animation.value,
-              ),
-            ],
-          ),
-        ),
-      );
     } else {
-      return const Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('Loading...'),
-              SizedBox(height: 20),
-              CircularProgressIndicator(),
-            ],
-          ),
-        ),
-      );
+      return QrCodeScreenLayout(
+          children: !isLoading && slug != null
+              ? [
+                  Container(
+                      width: 210,
+                      height: 210,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Center(
+                        child: QrImageView(
+                          data: slug!,
+                          version: QrVersions.auto,
+                          size: 200.0,
+                        ),
+                      )),
+                  const SizedBox(height: 20),
+                  Container(
+                    height: 3,
+                    color: const Color.fromARGB(255, 247, 87, 164),
+                    width: 210 * _animation.value,
+                  ),
+                ]
+              : [
+                  const SizedBox(
+                    height: 233,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Loading...'),
+                        SizedBox(height: 20),
+                        CircularProgressIndicator(
+                          color: Color.fromARGB(255, 247, 87, 164),
+                        ),
+                      ],
+                    ),
+                  ),
+                ]);
     }
   }
 
   @override
   void dispose() {
     channel.sink.close();
+    _animationController.dispose();
     super.dispose();
+  }
+}
+
+class QrCodeScreenLayout extends StatelessWidget {
+  final List<Widget> children;
+
+  const QrCodeScreenLayout({super.key, required this.children});
+
+  void launchUrl(String url) async {
+    await launchUrlString(url);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ShaderMask(
+                      shaderCallback: (Rect bounds) {
+                        return const LinearGradient(
+                          colors: [
+                            Color.fromARGB(255, 247, 87, 164),
+                            Color.fromARGB(255, 253, 149, 129)
+                          ],
+                        ).createShader(bounds);
+                      },
+                      child: const Text(
+                        'Hi, Plinker!',
+                        style: TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text('SCAN QR CODE TO LOGIN:',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        )),
+                    const Text(
+                        'Plink mobile app > Profile > Settings > My Plink for PC',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center),
+                    const SizedBox(height: 30),
+                    ...children,
+                    const SizedBox(height: 40),
+                    const Text(
+                        'In order to use Plink Desktop please get mobile app first:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        )),
+                    const SizedBox(height: 10),
+                    GestureDetector(
+                      onTap: () {
+                        launchUrl(
+                            'https://play.google.com/store/apps/details?id=tech.plink.PlinkApp');
+                      },
+                      child: Image.asset('assets/images/GooglePlay.png',
+                          width: 150),
+                    ),
+                    const SizedBox(height: 10),
+                    GestureDetector(
+                      onTap: () {
+                        launchUrl(
+                            'https://apps.apple.com/us/app/plink-team-up-chat-play/id1306783602');
+                      },
+                      child:
+                          Image.asset('assets/images/AppStore.png', width: 150),
+                    ),
+                  ],
+                ),
+              ),
+              RichText(
+                textAlign: TextAlign.center,
+                text: TextSpan(
+                  text: 'By continuing you agree with our ',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: 'Terms and Conditions',
+                      style: const TextStyle(
+                        color: Color.fromARGB(255, 247, 87, 164),
+                        decoration: TextDecoration.underline,
+                      ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () {
+                          launchUrl(
+                              'https://plink.tech/static/pages/pdfs/ToU.pdf');
+                        },
+                    ),
+                    const TextSpan(text: ' and '),
+                    TextSpan(
+                      text: 'Privacy Policy',
+                      style: const TextStyle(
+                        color: Color.fromARGB(255, 247, 87, 164),
+                        decoration: TextDecoration.underline,
+                      ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () {
+                          launchUrl(
+                              'https://plink.tech/static/pages/pdfs/PP.pdf');
+                        },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
