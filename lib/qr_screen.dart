@@ -1,10 +1,11 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:web_socket_channel/io.dart';
-import 'dart:convert';
 
 class QrCodeScreen extends StatefulWidget {
   const QrCodeScreen({super.key});
@@ -21,6 +22,7 @@ class _QrCodeScreenState extends State<QrCodeScreen>
   bool isLoading = true;
   late AnimationController _animationController;
   late Animation<double> _animation;
+  late Timer? timer = null;
 
   @override
   void initState() {
@@ -52,6 +54,9 @@ class _QrCodeScreenState extends State<QrCodeScreen>
     channel.stream.listen((message) {
       setState(() {
         userToken = jsonDecode(message)['user_token'];
+        if (timer != null) {
+          timer!.cancel();
+        }
         if (userToken != null) {
           channel.sink.close();
           isLoading = false;
@@ -63,7 +68,10 @@ class _QrCodeScreenState extends State<QrCodeScreen>
       isLoading = false;
     });
 
-    Future.delayed(const Duration(seconds: 60), () {
+    if (timer != null && timer!.isActive) {
+      timer!.cancel();
+    }
+    timer = Timer(const Duration(seconds: 60), () {
       if (mounted) {
         setState(() {
           isLoading = true;
@@ -76,12 +84,12 @@ class _QrCodeScreenState extends State<QrCodeScreen>
   @override
   Widget build(BuildContext context) {
     if (userToken != null) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
             child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
+            const Text(
               'Successfully logged in!',
               style: TextStyle(
                 fontSize: 20,
@@ -89,8 +97,20 @@ class _QrCodeScreenState extends State<QrCodeScreen>
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 20),
-            Icon(Icons.check_circle_outlined, color: Colors.green, size: 60),
+            const SizedBox(height: 20),
+            const Icon(Icons.check_circle_outlined,
+                color: Colors.green, size: 60),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  isLoading = true;
+                  userToken = null;
+                });
+                getSlug();
+              },
+              child: const Text('Reset'),
+            ),
           ],
         )),
       );
